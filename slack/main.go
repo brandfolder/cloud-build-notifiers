@@ -92,7 +92,7 @@ func (s *slackNotifier) writeMessage(build *cbpb.Build) (*slack.WebhookMessage, 
 	//if !ok {
 	//	commitSha = "UNKNOWN_COMMIT_SHA"
 	//}
-	// arbitrary and another two
+	// arbitrary and another three
 	msg := ""
 	b, err := json.Marshal(build)
 	if err != nil {
