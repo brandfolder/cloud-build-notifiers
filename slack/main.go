@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/cloud-build-notifiers/lib/notifiers"
@@ -79,27 +80,35 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 }
 
 func (s *slackNotifier) writeMessage(build *cbpb.Build) (*slack.WebhookMessage, error) {
-	repoName, ok := build.Substitutions["REPO_NAME"]
-	if !ok {
-		repoName = "UNKNOWN_REPO"
+	//repoName, ok := build.Substitutions["REPO_NAME"]
+	//if !ok {
+	//	repoName = "UNKNOWN_REPO"
+	//}
+	//branchName, ok := build.Substitutions["BRANCH_NAME"]
+	//if !ok {
+	//	branchName = "UNKNOWN_BRANCH"
+	//}
+	//commitSha, ok := build.Substitutions["SHORT_SHA"]
+	//if !ok {
+	//	commitSha = "UNKNOWN_COMMIT_SHA"
+	//}
+	msg := ""
+	b, err := json.Marshal(build)
+	if err != nil {
+		msg = err.Error()
+	} else {
+		msg = string(b)
 	}
-	branchName, ok := build.Substitutions["BRANCH_NAME"]
-	if !ok {
-		branchName = "UNKNOWN_BRANCH"
-	}
-	commitSha, ok := build.Substitutions["SHORT_SHA"]
-	if !ok {
-		commitSha = "UNKNOWN_COMMIT_SHA"
-	}
-	txt := fmt.Sprintf(
-		":%s: %s %s (%s) \n Branch: %s Short SHA: %s",
-		repoName,
-		repoName,
-		build.Status,
-		build.ProjectId,
-		branchName,
-		commitSha,
-	)
+	txt := fmt.Sprintf("%+v\n%s", build, msg)
+	//txt := fmt.Sprintf(
+	//	":%s: %s %s (%s) \n Branch: %s Short SHA: %s",
+	//	repoName,
+	//	repoName,
+	//	build.Status,
+	//	build.ProjectId,
+	//	branchName,
+	//	commitSha,
+	//)
 
 	var clr string
 	switch build.Status {
