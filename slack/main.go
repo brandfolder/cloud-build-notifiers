@@ -82,8 +82,6 @@ func (s *slackNotifier) SetUp(ctx context.Context, cfg *notifiers.Config, sg not
 	s.webhookURL = wu
 
 	channelRef, ok := cfg.Spec.Notification.Delivery[notificationChannelConfigName]
-	log.Infof("cfg.Spec.Notification:  %v", cfg.Spec.Notification)
-	log.Infof("cfg.Spec.Notification.Delivery:  %v", cfg.Spec.Notification.Delivery)
 	if ok {
 		s.notificationChannel, _ = channelRef.(string)
 	}
