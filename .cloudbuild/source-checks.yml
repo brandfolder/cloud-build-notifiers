@@ -4,6 +4,7 @@ steps:
 
   - name: securego/gosec
     args:  ['-severity', 'medium', '-quiet', './...']
+    waitFor: ['-']
 
   - id: gofmt
     name: golang
@@ -12,3 +13,4 @@ steps:
      - -c 
      - |
        test -z $(gofmt -s -l .)
+    waitFor: ['-']
