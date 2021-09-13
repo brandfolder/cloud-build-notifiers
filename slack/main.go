@@ -135,8 +135,8 @@ func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
 	}
 	defer reader.Close()
 
-	// will move to io in golang 1.16
 	var b []byte
+	// will move to "io" in golang 1.16
 	if b, err = ioutil.ReadAll(reader); err != nil {
 		return
 	}
