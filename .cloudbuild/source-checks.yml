@@ -3,7 +3,7 @@ steps:
 #- id: gokart
 
   - name: securego/gosec
-    args:  ['-severity', 'medium', '-quiet', './...']
+    args:  ['./...']
     waitFor: ['-']
 
   - id: gofmt
