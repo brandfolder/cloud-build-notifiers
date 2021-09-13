@@ -1,0 +1,13 @@
+steps:
+# todo
+#- id: gokart
+
+- name: golang
+  args:  ['-severity', 'medium', '-quiet', './...']
+
+- id: gofmt
+  name: golang
+  entrypoint: 'bash'
+  args:
+   - -c |
+   test -z $(gofmt -s -l .)
