@@ -20,10 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	cbpb "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/GoogleCloudPlatform/cloud-build-notifiers/lib/notifiers"
 	log "github.com/golang/glog"
-	"google.golang.org/protobuf/encoding/prototext"
+	"github.com/golang/protobuf/proto"
+	cbpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 )
 
 // [END cloudbuild_logging_sample_imports]
@@ -58,7 +58,7 @@ func (h *logger) SendNotification(ctx context.Context, build *cbpb.Build) error 
 	// Include custom functionality here.
 	// This example logs the build.
 	if h.filter.Apply(ctx, build) {
-		log.V(1).Infof("printing build\n%s", prototext.Format(build))
+		log.V(1).Infof("printing build\n%s", proto.MarshalTextString(build))
 	} else {
 		log.V(1).Infof("build (%q, %q) did NOT match CEL filter", build.ProjectId, build.Id)
 	}

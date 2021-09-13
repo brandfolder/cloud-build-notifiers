@@ -219,8 +219,9 @@ func (s *smtpNotifier) buildEmail() (string, error) {
 
 	encoded := new(bytes.Buffer)
 	finalMsg := quotedprintable.NewWriter(encoded)
-	finalMsg.Write(body.Bytes())
-	if err := finalMsg.Close(); err != nil {
+	defer finalMsg.Close()
+	_, err = finalMsg.Write(body.Bytes())
+	if err != nil {
 		return "", fmt.Errorf("failed to close MIME writer: %w", err)
 	}
 
