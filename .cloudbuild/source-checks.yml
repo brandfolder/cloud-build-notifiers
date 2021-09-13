@@ -2,7 +2,7 @@ steps:
 # todo
 #- id: gokart
 
-  - name: golang
+  - name: securego/gosec
     args:  ['-severity', 'medium', '-quiet', './...']
 
   - id: gofmt
