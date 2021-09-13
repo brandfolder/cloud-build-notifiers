@@ -18,6 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"cloud.google.com/go/storage"
 	"github.com/GoogleCloudPlatform/cloud-build-notifiers/lib/notifiers"
 	log "github.com/golang/glog"
@@ -28,6 +32,7 @@ import (
 const (
 	webhookURLSecretName          = "webhookUrl"
 	notificationChannelConfigName = "notificationChannel"
+	storagePathPrefixf            = "messages/%q"
 )
 
 func main() {
@@ -41,6 +46,8 @@ type slackNotifier struct {
 
 	webhookURL          string
 	notificationChannel string
+
+	storageBucket string
 }
 
 func (s *slackNotifier) SetUp(ctx context.Context, cfg *notifiers.Config, sg notifiers.SecretGetter, _ notifiers.BindingResolver) error {
@@ -69,6 +76,13 @@ func (s *slackNotifier) SetUp(ctx context.Context, cfg *notifiers.Config, sg not
 		s.notificationChannel, _ = channelRef.(string)
 	}
 
+	cfgPath := os.Getenv("CONFIG_PATH")
+	if trm := strings.TrimPrefix(cfgPath, "gs://"); trm != cfgPath {
+		cfgPath = trm
+		split := strings.SplitN(cfgPath, "/", 2)
+		s.storageBucket = split[0]
+	}
+
 	return nil
 }
 
@@ -77,53 +91,58 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		return nil
 	}
 
+	slackClient := slack.New("")
+
 	log.Infof("sending Slack webhook for Build %q (status: %q)", build.Id, build.Status)
-	attachmentMsgOpt := s.buildMessage(build)
-	timestamp := s.checkForUpdateTimestamp(build)
+	attachmentMsgOpt := s.buildAttachmentMessageOption(build)
+	timestamp := s.getTimestamp(build.Id)
 	if timestamp != "" {
-		_, timestamp, err = slack.PostMessage(s.notificationChannel, attachmentMsgOpt)
-		// 4. write GCS object BUILD_ID -> timestamp
+		_, timestamp, err = slackClient.PostMessage(s.notificationChannel, *attachmentMsgOpt)
+		s.setTimestamp(build.Id, timestamp)
 	} else {
-		_, _, _, err = slack.UpdateMessage(s.notificationChannel, timestamp, attachmentMsgOpt)
+		_, _, _, err = slackClient.UpdateMessage(s.notificationChannel, timestamp, *attachmentMsgOpt)
 	}
+	return
 }
 
-func (s *slackNotifier) checkForUpdateTimestamp(build *cbpb.Build) (timestamp string) {
-	ctx := context.Background()
-	sc, err := storage.NewClient(ctx)
+func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
+	sc, err := storage.NewClient(context.Background())
 	if err != nil {
 		return
 	}
 	defer sc.Close()
 
-	cfgPath, ok := os.GetEnv("CONFIG_PATH")
-	if !ok {
+	path := fmt.Sprintf(storagePathPrefixf, buildId)
+	writer := sc.Bucket(s.storageBucket).Object(path).NewWriter(context.Background())
+	defer writer.Close()
+	if _, err := writer.Write([]byte(timestamp)); err != nil {
 		return
 	}
+}
 
-	if trm := strings.TrimPrefix(cfgPath, "gs://"); trm != cfgPath {
-		cfgPath = trm
-	} else {
-		return
-	}
-
-	split := strings.SplitN(cfgPath, "/", 2)
-	bucket := split[0]
-
-	path := fmt.Sprintf("state/%q", build.Id) // or build.GetId()
-	r, err := sc.NewReader(ctx, bucket, path)
+func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
+	sc, err := storage.NewClient(context.Background())
 	if err != nil {
 		return
 	}
-	defer r.Close()
+	defer sc.Close()
 
-	// will move to io in golang 1.16
-	if b, err := ioutil.ReadAll(r); err != nil {
+	path := fmt.Sprintf(storagePathPrefixf, buildId)
+	//r, err := sc.NewReader(ctx, bucket, path)
+	reader, err := sc.Bucket(s.storageBucket).Object(path).NewReader(context.Background())
+	if err != nil {
 		return
 	}
+	defer reader.Close()
 
-	// validate?
-	return (b)
+	// will move to io in golang 1.16
+	var b []byte
+	if b, err = ioutil.ReadAll(reader); err != nil {
+		return
+	}
+	timestamp = string(b)
+
+	return
 }
 
 func (s *slackNotifier) buildAttachmentMessageOption(build *cbpb.Build) *slack.MsgOption {
@@ -186,5 +205,6 @@ func (s *slackNotifier) buildAttachmentMessageOption(build *cbpb.Build) *slack.M
 		Color: clr,
 	}
 
-	return &slack.MsgOptionAttachments(attachment)
+	attachmentMsgOption := slack.MsgOptionAttachments(attachment)
+	return &attachmentMsgOption
 }
