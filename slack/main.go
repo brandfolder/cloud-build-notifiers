@@ -117,12 +117,27 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		s.setTimestamp(build.Id, timestamp)
 	} else {
 		_, _, _, err = slackClient.UpdateMessage(s.notificationChannel, timestamp, *attachmentMsgOpt)
+		s.deleteTimestamp(build.Id)
 	}
 	return
 }
 
 func (s *slackNotifier) getStoragePath(buildId string) string {
 	return fmt.Sprintf(storagePathPrefixf, buildId)
+}
+
+func (s *slackNotifier) deleteTimestamp(buildId string) {
+	sc, err := storage.NewClient(context.Background())
+	if err != nil {
+		return
+	}
+	defer sc.Close()
+
+	if err := sc.Bucket(s.storageBucket).Object(s.getStoragePath(buildId)).Delete(context.Background()); err != nil {
+		log.Infof("Error deleting the object: %q", err.Error())
+		return
+	}
+	return
 }
 
 func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
