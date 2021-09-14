@@ -112,7 +112,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	log.Infof("sending Slack webhook for Build %q (status: %q)", build.Id, build.Status)
 	attachmentMsgOpt := s.buildAttachmentMessageOption(build)
 	timestamp := s.getTimestamp(build.Id)
-	log.Info("timestamp: (%q)", timestamp)
+	log.Infof("timestamp: (%q)", timestamp)
 	if timestamp != "" {
 		_, timestamp, err = slackClient.PostMessage(s.notificationChannel, *attachmentMsgOpt)
 		s.setTimestamp(build.Id, timestamp)
