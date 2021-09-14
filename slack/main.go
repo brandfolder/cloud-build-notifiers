@@ -123,6 +123,10 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	return
 }
 
+func (s *slackNotifier) getStoragePath(buildId string) string {
+	return fmt.Sprintf(storagePathPrefixf, buildId)
+}
+
 func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	sc, err := storage.NewClient(context.Background())
 	if err != nil {
@@ -131,9 +135,9 @@ func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	}
 	defer sc.Close()
 
-	path := fmt.Sprintf(storagePathPrefixf, buildId)
+	path := s.getStoragePath(buildId)
 	writer := sc.Bucket(s.storageBucket).Object(path).NewWriter(context.Background())
-	log.Infof("bucket: %q, object: %q, writer: %q", s.storageBucket, path, writer)
+	log.Infof("bucket: %q, object: %q, writer: %v", s.storageBucket, path, writer)
 	defer writer.Close()
 	log.Infof("timestamp to write: %q", []byte(timestamp))
 	if _, err := writer.Write([]byte(timestamp)); err != nil {
@@ -150,7 +154,7 @@ func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
 	}
 	defer sc.Close()
 
-	path := fmt.Sprintf(storagePathPrefixf, buildId)
+	path := s.getStoragePath(buildId)
 	//r, err := sc.NewReader(ctx, bucket, path)
 	reader, err := sc.Bucket(s.storageBucket).Object(path).NewReader(context.Background())
 	if err != nil {
