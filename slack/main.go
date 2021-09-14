@@ -125,6 +125,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	sc, err := storage.NewClient(context.Background())
 	if err != nil {
+		log.Infof("Unable to create storage client: %w", err)
 		return
 	}
 	defer sc.Close()
@@ -133,6 +134,7 @@ func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	writer := sc.Bucket(s.storageBucket).Object(path).NewWriter(context.Background())
 	defer writer.Close()
 	if _, err := writer.Write([]byte(timestamp)); err != nil {
+		log.Infof("Error writing timestamp to storage: %w", err)
 		return
 	}
 }
