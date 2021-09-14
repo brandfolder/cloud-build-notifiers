@@ -84,7 +84,7 @@ func (s *slackNotifier) SetUp(ctx context.Context, cfg *notifiers.Config, sg not
 	}
 	apiResource, err := notifiers.FindSecretResourceName(cfg.Spec.Secrets, apiRef)
 	if err != nil {
-		return fmt.Errorf("failed to find Secret for ref %q: %w", err)
+		return fmt.Errorf("failed to find Secret for ref %q: %w", apiRef, err)
 	}
 	apiToken, err := sg.GetSecret(ctx, apiResource)
 	if err != nil {
