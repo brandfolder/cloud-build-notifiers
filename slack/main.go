@@ -113,7 +113,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	attachmentMsgOpt := s.buildAttachmentMessageOption(build)
 	timestamp := s.getTimestamp(build.Id)
 	log.Infof("timestamp: (%q)", timestamp)
-	if timestamp != "" {
+	if timestamp == "" {
 		_, timestamp, err = slackClient.PostMessage(s.notificationChannel, *attachmentMsgOpt)
 		s.setTimestamp(build.Id, timestamp)
 	} else {
