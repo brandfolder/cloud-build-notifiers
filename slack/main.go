@@ -133,11 +133,14 @@ func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 
 	path := fmt.Sprintf(storagePathPrefixf, buildId)
 	writer := sc.Bucket(s.storageBucket).Object(path).NewWriter(context.Background())
+	log.Infof("bucket: %q, object: %q, writer: %q", s.storageBucket, path, writer)
 	defer writer.Close()
+	log.Infof("timestamp to write: %q", []byte(timestamp))
 	if _, err := writer.Write([]byte(timestamp)); err != nil {
 		log.Infof("Error writing timestamp to storage: %q", err.Error())
 		return
 	}
+	log.Infof("finished writing")
 }
 
 func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
