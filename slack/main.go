@@ -141,11 +141,12 @@ func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	defer writer.Close()
 	log.Infof("timestamp to write: %q", []byte(timestamp))
 	//if _, err := writer.Write([]byte(timestamp)); err != nil {
-	if bytes, err := fmt.Fprint(writer, timestamp); err != nil {
+	size, err := fmt.Fprint(writer, timestamp)
+	if err != nil {
 		log.Infof("Error writing timestamp to storage: %q", err.Error())
 		return
 	}
-	log.Infof("finished writing (%v) bytes", bytes)
+	log.Infof("finished writing (%v) bytes", size)
 }
 
 func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
