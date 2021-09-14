@@ -32,6 +32,7 @@ import (
 const (
 	webhookURLSecretName          = "webhookUrl"
 	notificationChannelConfigName = "notificationChannel"
+	apiTokenSecretName            = "apiToken"
 	storagePathPrefixf            = "messages/%q"
 )
 
@@ -46,6 +47,7 @@ type slackNotifier struct {
 
 	webhookURL          string
 	notificationChannel string
+	apiToken            string
 
 	storageBucket string
 }
@@ -76,6 +78,20 @@ func (s *slackNotifier) SetUp(ctx context.Context, cfg *notifiers.Config, sg not
 		s.notificationChannel, _ = channelRef.(string)
 	}
 
+	apiRef, err := notifiers.GetSecretRef(cfg.Spec.Notification.Delivery, apiTokenSecretName)
+	if err != nil {
+		return fmt.Errorf("failed to get Secret ref from delivery config (%v) field %q: %w", cfg.Spec.Notification.Delivery, apiTokenSecretName, err)
+	}
+	apiResource, err := notifiers.FindSecretResourceName(cfg.Spec.Secrets, apiRef)
+	if err != nil {
+		return fmt.Errorf("failed to find Secret for ref %q: %w", err)
+	}
+	apiToken, err := sg.GetSecret(ctx, apiResource)
+	if err != nil {
+		return fmt.Errorf("failed to get api secret: %w", err)
+	}
+	s.apiToken = apiToken
+
 	cfgPath := os.Getenv("CONFIG_PATH")
 	if trm := strings.TrimPrefix(cfgPath, "gs://"); trm != cfgPath {
 		cfgPath = trm
@@ -91,7 +107,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		return nil
 	}
 
-	slackClient := slack.New("")
+	slackClient := slack.New(s.apiToken)
 
 	log.Infof("sending Slack webhook for Build %q (status: %q)", build.Id, build.Status)
 	attachmentMsgOpt := s.buildAttachmentMessageOption(build)
