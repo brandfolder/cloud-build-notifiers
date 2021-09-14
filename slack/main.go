@@ -33,7 +33,7 @@ const (
 	webhookURLSecretName          = "webhookUrl"
 	notificationChannelConfigName = "notificationChannel"
 	apiTokenSecretName            = "apiToken"
-	storagePathPrefixf            = "messages/%q"
+	storagePathPrefixf            = "messages/%c"
 )
 
 func main() {
