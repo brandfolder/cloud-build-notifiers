@@ -112,10 +112,8 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	log.Infof("sending Slack webhook for Build %q (status: %q)", build.Id, build.Status)
 	attachmentMsgOpt := s.buildAttachmentMessageOption(build)
 	timestamp := s.getTimestamp(build.Id)
-	log.Infof("timestamp: (%q)", timestamp)
 	if timestamp == "" {
 		_, timestamp, err = slackClient.PostMessage(s.notificationChannel, *attachmentMsgOpt)
-		log.Infof("timestamp: (%q)", timestamp)
 		s.setTimestamp(build.Id, timestamp)
 	} else {
 		_, _, _, err = slackClient.UpdateMessage(s.notificationChannel, timestamp, *attachmentMsgOpt)
@@ -135,18 +133,16 @@ func (s *slackNotifier) setTimestamp(buildId string, timestamp string) {
 	}
 	defer sc.Close()
 
-	path := s.getStoragePath(buildId)
-	writer := sc.Bucket(s.storageBucket).Object(path).NewWriter(context.Background())
-	log.Infof("bucket: %q, object: %q, writer: %v", s.storageBucket, path, writer)
-	defer writer.Close()
-	log.Infof("timestamp to write: %q", []byte(timestamp))
-	//if _, err := writer.Write([]byte(timestamp)); err != nil {
-	size, err := fmt.Fprint(writer, timestamp)
-	if err != nil {
-		log.Infof("Error writing timestamp to storage: %q", err.Error())
+	writer := sc.Bucket(s.storageBucket).Object(s.getStoragePath(buildId)).NewWriter(context.Background())
+	defer func() {
+		err := writer.Close()
+		if err != nil {
+			log.Infof("Error closing the writer: %q", err.Error())
+		}
+	}()
+	if _, err := fmt.Fprint(writer, timestamp); err != nil {
 		return
 	}
-	log.Infof("finished writing (%v) bytes", size)
 }
 
 func (s *slackNotifier) getTimestamp(buildId string) (timestamp string) {
