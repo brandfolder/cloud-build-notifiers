@@ -15,3 +15,4 @@ steps:
       - --destination=${_GCR_IMAGE_NAME}:${SHORT_SHA}
       - --destination=${_GCR_IMAGE_NAME}:${BRANCH_NAME}
       - --cache=true
+      - --cache-ttl=720h
