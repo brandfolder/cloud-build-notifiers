@@ -13,13 +13,13 @@
 # limitations under the License.
 
 FROM golang AS build-env
+WORKDIR /go-src/slack
+
 # This exists to help kaniko with caching
-COPY go.mod /go-src/go.mod
-COPY go.sum /go-src/go.sum
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . /go-src/
-WORKDIR /go-src/slack
 RUN go build -o /go-app .
 
 # From the Cloud Run docs:
