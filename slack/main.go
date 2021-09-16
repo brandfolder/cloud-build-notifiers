@@ -37,6 +37,7 @@ const (
 )
 
 func main() {
+	log.Infof("Starting with GIT_VERSION: %q", os.Getenv("GIT_VERSION"))
 	if err := notifiers.Main(new(slackNotifier)); err != nil {
 		log.Fatalf("fatal error: %v", err)
 	}
