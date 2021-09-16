@@ -16,7 +16,7 @@ FROM golang AS build-env
 WORKDIR /go-src/slack
 
 # This exists to help kaniko with caching
-COPY go.mod go.sum ./
+COPY go.mod go.sum /go-src/
 RUN go mod download
 
 COPY . /go-src/
