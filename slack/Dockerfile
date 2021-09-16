@@ -28,6 +28,6 @@ RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -
     rm -rf /var/lib/apt/lists/*
 
 FROM gcr.io/distroless/base
-ARG GIT_VERSION=${COMMIT}
+ENV GIT_VERSION=${COMMIT}
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
