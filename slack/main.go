@@ -265,6 +265,7 @@ func buildAttachmentMessageOption(sb storedBuild) *slack.MsgOption {
 	}
 	buildLogUrl := ""
 	buildStatus := ""
+	buildProjectId := ""
 	// Look at all the builds
 	for _, build range := sb.Build {
 		// Check all the build substition info fields
