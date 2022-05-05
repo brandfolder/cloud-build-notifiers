@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-build-notifiers/lib/notifiers"
 	log "github.com/golang/glog"
 	"github.com/slack-go/slack"
-	"google.golang.org/genproto/googleapis/devtools/build/v1"
 	cbpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 )
 
@@ -163,11 +162,11 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	}
 
 	// Determine if we're done and need to delete the build from google cloud store
-	return s.deleteIfDone(sc, sb, commitSha)
-}
-
-func (s *slackNotifier) getStoragePath(commitSha string) string {
-	return fmt.Sprintf(storagePathPrefixf, commitSha)
+	err = sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).Delete(context.Background())
+	if err != nil {
+		log.Infof("Error deleting the object: %q", err.Error())
+	}
+	return err
 }
 
 // getStoredBuild fetches the build info for this commit hash from google cloud storage
@@ -180,7 +179,7 @@ func (s *slackNotifier) getStoredBuild(sc *storage.Client, build *cbpb.Build, co
 		sb.Build[build.Id] = build
 	}()
 
-	path := s.getStoragePath(commitSha)
+	path := getStoragePath(commitSha)
 	reader, err := sc.Bucket(s.storageBucket).Object(path).NewReader(context.Background())
 	if err != nil {
 		log.Infof("Unable to read stored file (%s) in bucket (%s) : %q", s.storageBucket, path, err.Error())
@@ -213,7 +212,7 @@ func (s *slackNotifier) updateSlackMessage(sb storedBuild) error {
 
 // updateCloudStore updates google cloud storage with the latest build info under the commit sha filename
 func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha, timestamp string, sb storedBuild) error {
-	writer := sc.Bucket(s.storageBucket).Object(s.getStoragePath(commitSha)).NewWriter(context.Background())
+	writer := sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).NewWriter(context.Background())
 	defer func() {
 		err := writer.Close()
 		if err != nil {
@@ -236,40 +235,39 @@ func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha, time
 	return err
 }
 
-//  deleteIfDone deletes the build info from google cloud store if we're done
-func (s *slackNotifier) deleteIfDone(sc *storage.Client, sb storedBuild, commitSha string) error {
-	// Don't delete the file if one of the builds is still in progress
+func getStoragePath(commitSha string) string {
+	return fmt.Sprintf(storagePathPrefixf, commitSha)
+}
+
+// shouldDeleteBuildFile return false if one of the builds is still in progress
+func shouldDeleteBuildFile(sb storedBuild) bool {
 	for _, build := range sb.Build {
 		if build.Status == cbpb.Build_WORKING {
-			return nil
+			return false
 		}
 	}
-
-	// Delete the build info file from the storage bucket
-	err := sc.Bucket(s.storageBucket).Object(s.getStoragePath(commitSha)).Delete(context.Background())
-	if err != nil {
-		log.Infof("Error deleting the object: %q", err.Error())
-	}
-	return err
+	return true
 }
 
 func buildAttachmentMessageOption(sb storedBuild) *slack.MsgOption {
 	// Default values for the build info fields
 	buildInfo := map[string]string{
-		repoNameSub: "UNKNOWN_REPO",
-		branchNameSub: "UNKNOWN_BRANCH",
+		repoNameSub:       "UNKNOWN_REPO",
+		branchNameSub:     "UNKNOWN_BRANCH",
 		commitShortShaSub: "UNKNOWN_COMMIT_SHA",
-		commitMsgSub: "UNKNOWN_COMMIT_MESSAGE",
-		commitURLSub: "UNKNOWN_COMMIT_URL",
-		commitAuthorSub: "UNKNOWN_COMMIT_AUTHOR",
+		commitMsgSub:      "UNKNOWN_COMMIT_MESSAGE",
+		commitURLSub:      "UNKNOWN_COMMIT_URL",
+		commitAuthorSub:   "UNKNOWN_COMMIT_AUTHOR",
 	}
 	buildLogUrl := ""
-	buildStatus := ""
+	buildStatus := cbpb.Build_STATUS_UNKNOWN
 	buildProjectId := ""
 	// Look at all the builds
-	for _, build range := sb.Build {
+	// (named this loop as buildLoop so we can break out of it in the switch case)
+buildLoop:
+	for _, build := range sb.Build {
 		// Check all the build substition info fields
-		for key, _ range := buildInfo {
+		for key, _ := range buildInfo {
 			// If there is a value for that build key in the build info
 			if val, ok := build.Substitutions[key]; ok {
 				// Update value for that key
@@ -287,7 +285,7 @@ func buildAttachmentMessageOption(sb storedBuild) *slack.MsgOption {
 			cbpb.Build_TIMEOUT,
 			cbpb.Build_INTERNAL_ERROR:
 			// Stop looking through other builds
-			break
+			break buildLoop
 		}
 	}
 
