@@ -137,12 +137,15 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	}
 
 	log.Infof("sending Slack webhook for Build %q (status: %q)", build.Id, build.Status)
-	sb := s.getStoredBuild(sc, build, commitSha)
 
+	// Get the stored builds from google cloud storage if it exists
+	sb := s.getStoredBuild(sc, commitSha)
+	// Add the latest build to the stored build info
+	sb.Build[build.Id] = build
+	// Create the message to send to slack
+	attachmentMsgOpt := buildAttachmentMessageOption(sb)
 	// If no initial message has been sent to slack yet
 	if sb.Timestamp == "" {
-		// Create the initial message to send to slack
-		attachmentMsgOpt := buildAttachmentMessageOption(sb)
 		// Send the initial message
 		_, timestamp, err := s.slackClient.PostMessage(s.notificationChannel, *attachmentMsgOpt)
 		if err != nil {
@@ -152,8 +155,19 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		return s.updateCloudStoreFile(sc, commitSha, timestamp, sb)
 	}
 
-	// Update the message in slack
-	err = s.updateSlackMessage(sb)
+	// Update the slack message
+	_, _, _, err = s.slackClient.UpdateMessage(s.notificationChannel, sb.Timestamp, *attachmentMsgOpt)
+	if err != nil {
+		log.Infof("Unable to update slack message : %q", err.Error())
+	}
+
+	// Determine if we're done and need to delete the build from google cloud store
+	if shouldDeleteBuildFile(sb) {
+		err = sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).Delete(context.Background())
+		if err != nil {
+			log.Infof("Error deleting the build file: %q", err.Error())
+		}
+	}
 
 	// Update the stored build information
 	err = s.updateCloudStoreFile(sc, commitSha, sb.Timestamp, sb)
@@ -161,65 +175,59 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		return err
 	}
 
-	// Determine if we're done and need to delete the build from google cloud store
-	err = sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).Delete(context.Background())
-	if err != nil {
-		log.Infof("Error deleting the object: %q", err.Error())
-	}
 	return err
 }
 
 // getStoredBuild fetches the build info for this commit hash from google cloud storage
 // and adds the latest build to the response
-func (s *slackNotifier) getStoredBuild(sc *storage.Client, build *cbpb.Build, commitSha string) storedBuild {
-	sb := storedBuild{}
-
-	// Make sure we add the latest build to the storedBuild when this function completes
-	defer func() {
-		sb.Build[build.Id] = build
-	}()
-
+func (s *slackNotifier) getStoredBuild(sc *storage.Client, commitSha string) storedBuild {
 	path := getStoragePath(commitSha)
+	sb := storedBuild{}
+	// Open a reader for the file in the google store, if it exists
 	reader, err := sc.Bucket(s.storageBucket).Object(path).NewReader(context.Background())
 	if err != nil {
-		log.Infof("Unable to read stored file (%s) in bucket (%s) : %q", s.storageBucket, path, err.Error())
+		log.Infof("Could not read stored file (%s) in bucket (%s) : %q", s.storageBucket, path, err.Error())
 		return sb
 	}
 	defer reader.Close()
-
-	var b []byte
-	if b, err = io.ReadAll(reader); err != nil {
-		log.Infof("Unable to read from file : %q", err.Error())
-		return sb
-	}
-	if err := json.Unmarshal(b, &sb); err != nil {
-		log.Infof("Unable to unmarshal json : %q", err.Error())
-		return sb
-	}
-
-	return sb
-}
-
-func (s *slackNotifier) updateSlackMessage(sb storedBuild) error {
-	// Create the initial message to send to slack
-	attachmentMsgOpt := buildAttachmentMessageOption(sb)
-	_, _, _, err := s.slackClient.UpdateMessage(s.notificationChannel, sb.Timestamp, *attachmentMsgOpt)
+	// Read and unmarshal the file
+	sb, err = readFromBuildStorageFile(reader, sb)
 	if err != nil {
-		log.Infof("Unable to update slack message : %q", err.Error())
+		log.Infof("Unable to read/unmarshal file (%s) in bucket (%s) : %q", s.storageBucket, path, err.Error())
 	}
-	return err
+	return sb
 }
 
 // updateCloudStore updates google cloud storage with the latest build info under the commit sha filename
 func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha, timestamp string, sb storedBuild) error {
 	writer := sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).NewWriter(context.Background())
-	defer func() {
-		err := writer.Close()
-		if err != nil {
-			log.Infof("Error closing the writer: %q", err.Error())
-		}
-	}()
+	defer writer.Close()
 
+	return writeBuildToStorageFile(writer, sb)
+}
+
+func getStoragePath(commitSha string) string {
+	return fmt.Sprintf(storagePathPrefixf, commitSha)
+}
+
+// readFromBuildStorageFile reads the json from the build storage file and adds the latest build
+func readFromBuildStorageFile(reader io.Reader, sb storedBuild) (storedBuild, error) {
+	var err error
+	var b []byte
+	if b, err = io.ReadAll(reader); err != nil {
+		log.Infof("Unable to read from file : %q", err.Error())
+		return sb, err
+	}
+	if err := json.Unmarshal(b, &sb); err != nil {
+		log.Infof("Unable to unmarshal json : %q", err.Error())
+		return sb, err
+	}
+
+	return sb, nil
+}
+
+// writeBuildToStorageFile writes the json to the build storage file
+func writeBuildToStorageFile(writer io.Writer, sb storedBuild) error {
 	// Marshal the timestamp/build info
 	b, err := json.Marshal(sb)
 	if err != nil {
@@ -233,10 +241,6 @@ func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha, time
 	}
 
 	return err
-}
-
-func getStoragePath(commitSha string) string {
-	return fmt.Sprintf(storagePathPrefixf, commitSha)
 }
 
 // shouldDeleteBuildFile return false if one of the builds is still in progress

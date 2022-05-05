@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -239,5 +240,48 @@ func TestShouldDeleteBuildFileFalse(t *testing.T) {
 
 	if shouldDeleteBuildFile(sb) == true {
 		t.Errorf("still working, it should not be deleted: %+v", sb)
+	}
+}
+
+func TestReadStoredBuildFromFile(t *testing.T) {
+	sb := storedBuild{}
+	byteData := []byte(`{
+		"timestamp": "faketimestampvalue",
+		"build": {
+			"fakebuildid1" : {
+				"id": "fakebuildid1",
+				"projectId": "fakeprojectid1",
+				"status": 3
+			}
+		}
+	}`)
+
+	r := bytes.NewReader(byteData)
+	sb, err := readFromBuildStorageFile(r, sb)
+	if err != nil {
+		t.Errorf("could not read build file into storageBuild: %s", err.Error())
+	}
+}
+
+func TestWriteStoredBuildToFile(t *testing.T) {
+	sb := storedBuild{
+		Timestamp: "faketimestampvalue",
+		Build: map[string]*cbpb.Build{
+			"some-build-id1": {
+				ProjectId: "my-project-id",
+				Id:        "some-build-id1",
+				Status:    cbpb.Build_WORKING,
+			},
+		},
+	}
+
+	var b bytes.Buffer
+	if err := writeBuildToStorageFile(&b, sb); err != nil {
+		t.Fatalf("s.Display() gave error: %s", err)
+	}
+	got := b.String()
+	want := `{"timestamp":"faketimestampvalue","build":{"some-build-id1":{"id":"some-build-id1","project_id":"my-project-id","status":2}}}`
+	if got != want {
+		t.Errorf("write doesn't match stored build\n got: %q\nwant: %q", got, want)
 	}
 }
