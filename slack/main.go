@@ -165,6 +165,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 
 	// Determine if we're done and need to delete the build from google cloud store
 	if shouldDeleteBuildFile(sb) {
+		log.Infof("Deleting the build file: %s", commitSha)
 		err = sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).Delete(context.Background())
 		if err != nil {
 			log.Infof("Error deleting the build file: %q", err.Error())
@@ -249,11 +250,28 @@ func writeBuildToStorageFile(writer io.Writer, sb storedBuild) error {
 // shouldDeleteBuildFile return false if one of the builds is still in progress
 func shouldDeleteBuildFile(sb storedBuild) bool {
 	for _, build := range sb.Build {
-		if build.Status == cbpb.Build_WORKING {
+		// If we are still working on the build/deploy
+		if statusInProgress(build.Status) {
+			// Do not delete the build message yet from GCP
 			return false
 		}
 	}
 	return true
+}
+
+// statusInProgress checks if the given status is an "in progress" status
+func statusInProgress(status cbpb.Build_Status) bool {
+	inProgressStatuses := []cbpb.Build_Status{
+		cbpb.Build_WORKING,
+		cbpb.Build_PENDING,
+		cbpb.Build_QUEUED,
+	}
+	for _, ps := range inProgressStatuses {
+		if status == ps {
+			return true
+		}
+	}
+	return false
 }
 
 func buildAttachmentMessageOption(sb storedBuild) *slack.MsgOption {

@@ -193,11 +193,36 @@ func TestMultiRegionFailBuildAttachmentMessageOption(t *testing.T) {
 	return
 }
 
-func TestShouldDeleteBuildFileTrue(t *testing.T) {
+func TestShouldDeleteBuildFileFailureTrue(t *testing.T) {
 	b1 := &cbpb.Build{
 		ProjectId: "my-project-id",
 		Id:        "some-build-id1",
 		Status:    cbpb.Build_FAILURE,
+	}
+
+	b2 := &cbpb.Build{
+		ProjectId: "my-project-id",
+		Id:        "some-build-id2",
+		Status:    cbpb.Build_SUCCESS,
+	}
+
+	sb := storedBuild{
+		Build: map[string]*cbpb.Build{
+			b1.Id: b1,
+			b2.Id: b2,
+		},
+	}
+
+	if shouldDeleteBuildFile(sb) == false {
+		t.Errorf("no waiting message, it should delete: %+v", sb)
+	}
+}
+
+func TestShouldDeleteBuildFileSuccessTrue(t *testing.T) {
+	b1 := &cbpb.Build{
+		ProjectId: "my-project-id",
+		Id:        "some-build-id1",
+		Status:    cbpb.Build_SUCCESS,
 	}
 
 	b2 := &cbpb.Build{
