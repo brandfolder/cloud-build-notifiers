@@ -182,11 +182,12 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 // and adds the latest build to the response
 func (s *slackNotifier) getStoredBuild(sc *storage.Client, commitSha string) storedBuild {
 	path := getStoragePath(commitSha)
-	sb := storedBuild{}
+	sb := storedBuild{Build: map[string]*cbpb.Build{}}
 	// Open a reader for the file in the google store, if it exists
 	reader, err := sc.Bucket(s.storageBucket).Object(path).NewReader(context.Background())
 	if err != nil {
-		log.Infof("Could not read stored file (%s) in bucket (%s) : %q", s.storageBucket, path, err.Error())
+		// If it doesn't exist yet, just log that info, we can create it later
+		log.Infof("Could not read stored file (may not exist yet) (%s) in bucket (%s) : %q", path, s.storageBucket, err.Error())
 		return sb
 	}
 	defer reader.Close()
