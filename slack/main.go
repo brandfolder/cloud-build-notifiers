@@ -151,8 +151,10 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 		if err != nil {
 			log.Infof("Unable to post initial build message to slack : %q", err.Error())
 		}
+		// Set the slack timestamp (the unique identifier slack uses for channel messages)
+		sb.Timestamp = timestamp
 		// Store the initial build information in google cloud
-		return s.updateCloudStoreFile(sc, commitSha, timestamp, sb)
+		return s.updateCloudStoreFile(sc, commitSha, sb)
 	}
 
 	// Update the slack message
@@ -170,7 +172,7 @@ func (s *slackNotifier) SendNotification(ctx context.Context, build *cbpb.Build)
 	}
 
 	// Update the stored build information
-	err = s.updateCloudStoreFile(sc, commitSha, sb.Timestamp, sb)
+	err = s.updateCloudStoreFile(sc, commitSha, sb)
 	if err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func (s *slackNotifier) getStoredBuild(sc *storage.Client, commitSha string) sto
 }
 
 // updateCloudStore updates google cloud storage with the latest build info under the commit sha filename
-func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha, timestamp string, sb storedBuild) error {
+func (s *slackNotifier) updateCloudStoreFile(sc *storage.Client, commitSha string, sb storedBuild) error {
 	writer := sc.Bucket(s.storageBucket).Object(getStoragePath(commitSha)).NewWriter(context.Background())
 	defer writer.Close()
 
