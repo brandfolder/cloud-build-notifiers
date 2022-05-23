@@ -15,4 +15,5 @@ steps:
 
   - id: gofmt
     name: gcr.io/cloud-builders/go
-    args: ["gofmt", "-s", "-l", "."]
+    args: ["gofmt", "-s", "-d", "."]
+    env: ['PROJECT_ROOT=github.com/brandfolder/cloud-build-notifiers']
