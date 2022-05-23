@@ -15,4 +15,5 @@ steps:
 
   - id: gofmt
     name: golang
-    entrypoint: 'gofmt_runner.sh'
+    entrypoint: 'sh'
+    args: ['gofmt_runner.sh']
