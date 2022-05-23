@@ -19,5 +19,5 @@ steps:
     args:
      - -c 
      - |
-       test -z $(gofmt -s -l .)
+       test -z $(gofmt -s -d .) || gofmt -s -d .
     waitFor: ['-']
