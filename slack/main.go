@@ -293,7 +293,7 @@ func buildAttachmentMessageOption(sb storedBuild) *slack.MsgOption {
 buildLoop:
 	for _, build := range sb.Build {
 		// Check all the build substition info fields
-		for key, _ := range buildInfo {
+		for key := range buildInfo {
 			// If there is a value for that build key in the build info
 			if val, ok := build.Substitutions[key]; ok {
 				// Update value for that key
