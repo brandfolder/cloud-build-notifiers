@@ -15,4 +15,4 @@ steps:
 
   - id: gofmt
     name: golang
-    args: ["gofmt", "-s", "-l", "."]
+    args: ["gofmt", "-s", "-d", "."]
