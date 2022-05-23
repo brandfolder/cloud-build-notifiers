@@ -14,6 +14,10 @@ steps:
     waitFor: ['-']
 
   - id: gofmt
-    name: gcr.io/cloud-builders/go
-    args: ["gofmt", "-s", "-d", "."]
-    env: ['PROJECT_ROOT=github.com/brandfolder/cloud-build-notifiers']
+    name: golang
+    entrypoint: 'bash'
+    args:
+     - -c 
+     - |
+       test -z $(gofmt -s -l .)
+    waitFor: ['-']
