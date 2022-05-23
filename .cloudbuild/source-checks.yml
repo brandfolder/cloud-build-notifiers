@@ -15,4 +15,8 @@ steps:
 
   - id: gofmt
     name: golang
-    args: ["gofmt", "-s", "-d", "."]
+    entrypoint: 'bash'
+    args:
+     - -c
+     - |
+       test -z "$(gofmt -s -d .)"
