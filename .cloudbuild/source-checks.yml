@@ -15,9 +15,4 @@ steps:
 
   - id: gofmt
     name: golang
-    entrypoint: 'bash'
-    args:
-     - -c
-     - |
-       test -z "$(gofmt -s -d .)"
-    waitFor: ['-']
+    entrypoint: './gofmt_runner.sh'
