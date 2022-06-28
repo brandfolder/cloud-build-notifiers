@@ -84,9 +84,14 @@ $ sudo docker run \
 
 ## Brandfolder - How to test in stage
 
-Find the latest short commit sha in [bf-product-dev](https://console.cloud.google.com/cloud-build/builds?project=bf-product-dev) when you push your feature branch.
+Find the latest short commit sha in the [bf-product container registry](https://console.cloud.google.com/gcr/images/bf-container-registry/GLOBAL/bf-product/cloud-build-notifiers) when you push your feature branch to the `dev` branch.
 
 Use that commit sha for the `cloud_build_notifier_sha` in the [bf-product stage terraform](https://github.com/brandfolder/terraform/blob/a3d6a9b27d58770714d15826fe645b714f931109/infra/squads/product/stage/bf-product/terragrunt.hcl#L11).
+
+After changing the terraform file, from `/infra/squads` run:
+```
+SQUAD=product make run env=stage project=bf-product
+```
 
 You can then push a change to the [redirector stage branch](https://github.com/brandfolder/redirector/tree/stage) (it deploys much faster than boulder stage).
 
