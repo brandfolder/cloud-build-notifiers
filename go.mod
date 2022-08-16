@@ -15,7 +15,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.7.3
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-containerregistry v0.4.1
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/slack-go/slack v0.8.2
@@ -23,7 +23,7 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/api v0.43.0
 	google.golang.org/genproto v0.0.0-20210825212027-de86158e7fda
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/v3 v3.0.3 // indirect
 	k8s.io/client-go v0.20.5
