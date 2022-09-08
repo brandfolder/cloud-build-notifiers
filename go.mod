@@ -15,7 +15,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.7.3
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.9
 	github.com/google/go-containerregistry v0.4.1
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/slack-go/slack v0.8.2
