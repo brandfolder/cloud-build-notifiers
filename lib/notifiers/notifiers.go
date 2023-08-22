@@ -420,7 +420,7 @@ func newReceiver(notifier Notifier, params *receiverParams) http.HandlerFunc {
 			return
 		}
 
-		log.V(2).Infof("got PubSub message with ID %q from subscription %q", pspw.Message.ID, pspw.Subscription)
+		log.Infof("got PubSub message with ID %q from subscription %q", pspw.Message.ID, pspw.Subscription)
 
 		build := new(cbpb.Build)
 		// Be as lenient as possible in unmarshalling.
@@ -444,14 +444,14 @@ func newReceiver(notifier Notifier, params *receiverParams) http.HandlerFunc {
 		}
 		build = proto.MessageV1(bv2).(*cbpb.Build)
 
-		log.V(2).Infof("got PubSub Build payload:\n%+v\nattempting to send notification", proto.MarshalTextString(build))
+		log.Infof("got PubSub Build payload:\n%+v\nattempting to send notification", proto.MarshalTextString(build))
 		if err := notifier.SendNotification(ctx, build); err != nil {
 			log.Errorf("failed to run SendNotification: %v", err)
 			http.Error(w, "failed to send notification", http.StatusInternalServerError)
 			return
 		}
 
-		log.V(2).Infof("acking PubSub message %q with Build payload:\n%v", pspw.Message.ID, proto.MarshalTextString(build))
+		log.Infof("acking PubSub message %q with Build payload:\n%v", pspw.Message.ID, proto.MarshalTextString(build))
 	}
 }
 
