@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.16-alpine AS build-env
+FROM golang:1.23-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/slack
 RUN go build -o /go-app .
@@ -28,5 +28,6 @@ RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -
     rm -rf /var/lib/apt/lists/*
 
 FROM alpine
+RUN apk update && apk add --no-cache zlib>=1.2.12-r2
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
