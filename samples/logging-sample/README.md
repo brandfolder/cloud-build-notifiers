@@ -10,14 +10,14 @@ First create a bucket.
 
 ```sh
 export BUCKET_NAME=your_bucket_name
-gsutil mb gs://${BUCKET_NAME}/
+gcloud storage buckets create gs://${BUCKET_NAME}/
 ```
 
 Then upload the provided notifier config to the bucket.
 
 ```sh
 export CONFIG_FILE_NAME=notifier_config.yaml
-gsutil cp ${CONFIG_FILE_NAME} gs://${BUCKET_NAME}/${CONFIG_FILE_NAME}
+gcloud storage cp ${CONFIG_FILE_NAME} gs://${BUCKET_NAME}/${CONFIG_FILE_NAME}
 ```
 
 ## Build and Deploy

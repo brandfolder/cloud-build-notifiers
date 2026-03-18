@@ -189,13 +189,13 @@ upload_config() {
   # We allow this `mb` command to error since we rely on the `cp` command hard-
   # erroring if there's an actual problem (since `mb` fails if the bucket
   # already exists).
-  gsutil mb "${DESTINATION_BUCKET_URI}"
+  gcloud storage buckets create "${DESTINATION_BUCKET_URI}"
 
-  gsutil cp "${SOURCE_CONFIG_PATH}" "${DESTINATION_CONFIG_PATH}" ||
+  gcloud storage cp "${SOURCE_CONFIG_PATH}" "${DESTINATION_CONFIG_PATH}" ||
     fail "failed to copy config to GCS"
 
   if [ ! -z "${SOURCE_TEMPLATE_PATH}" ]; then
-    gsutil cp "${SOURCE_TEMPLATE_PATH}" "${DESTINATION_TEMPLATE_PATH}" ||
+    gcloud storage cp "${SOURCE_TEMPLATE_PATH}" "${DESTINATION_TEMPLATE_PATH}" ||
       fail "failed to copy template to GCS"
   fi
 
