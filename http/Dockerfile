@@ -12,22 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang AS build-env
+FROM golang:1.24-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/http
 RUN go test /go-src/http
 RUN go build -o /go-app .
 
-# From the Cloud Run docs:
-# https://cloud.google.com/run/docs/tutorials/pubsub#looking_at_the_code
-# Use the official Debian slim image for a lean production container.
-# https://hub.docker.com/_/debian
-# https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM debian:buster-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-FROM gcr.io/distroless/base
+FROM alpine:3.21
+RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 && \
+    apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
