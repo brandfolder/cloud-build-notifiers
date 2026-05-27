@@ -17,17 +17,8 @@ COPY . /go-src/
 WORKDIR /go-src/slack
 RUN go build -o /go-app .
 
-# From the Cloud Run docs:
-# https://cloud.google.com/run/docs/tutorials/pubsub#looking_at_the_code
-# Use the official Debian slim image for a lean production container.
-# https://hub.docker.com/_/debian
-# https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM debian:buster-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-FROM alpine
-RUN apk update && apk add --no-cache zlib>=1.2.12-r2
+FROM alpine:3.21
+RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 && \
+    apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
