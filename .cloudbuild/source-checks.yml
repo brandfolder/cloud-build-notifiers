@@ -1,20 +1,12 @@
 steps:
-  - id: gokart
-    name: golang:1.19
-    entrypoint: 'bash'
-    args:
-     - -c
-     - |
-       go install github.com/praetorian-inc/gokart@latest
-       gokart scan ./
-    waitFor: ['-']
-
+  # GoKart (praetorian-inc/gokart) is archived and pins golang.org/x/tools@v0.1.12,
+  # which panics on Go 1.24 export data ("unsupported version: 2"). gosec covers SAST.
   - name: securego/gosec
     args:  ['./...']
     waitFor: ['-']
 
   - id: gofmt
-    name: golang
+    name: golang:1.25
     entrypoint: 'sh'
     args:
      - -c 
