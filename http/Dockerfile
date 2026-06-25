@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24-alpine AS build-env
+FROM golang:1.25-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/http
 RUN go test /go-src/http

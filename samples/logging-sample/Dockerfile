@@ -14,7 +14,7 @@
 
 # [START cloudbuild_logging_sample_dockerfile]
 
-FROM golang AS build-env
+FROM golang:1.25-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/
 RUN go build -o /go-app .
