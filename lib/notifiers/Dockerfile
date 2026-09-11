@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Trigger staging rebuild
-FROM golang:1.25-alpine AS build-env
+FROM golang:1.26-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/lib/notifiers
 RUN go test /go-src/lib/notifiers
