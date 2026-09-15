@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25-alpine AS build-env
+FROM golang:1.26-alpine AS build-env
 COPY . /go-src/
 WORKDIR /go-src/http
 RUN go test /go-src/http
 RUN go build -o /go-app .
 
-FROM alpine:3.21
+FROM alpine:3.24
 RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 && \
     apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
