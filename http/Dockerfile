@@ -18,8 +18,8 @@ WORKDIR /go-src/http
 RUN go test /go-src/http
 RUN go build -o /go-app .
 
-FROM alpine:3.24
-RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 && \
+FROM alpine:3.23.5
+RUN apk upgrade --no-cache && \
     apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
