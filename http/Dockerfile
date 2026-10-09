@@ -18,7 +18,7 @@ WORKDIR /go-src/http
 RUN go test /go-src/http
 RUN go build -o /go-app .
 
-FROM alpine:3.23.5
+FROM alpine:3.23.6
 RUN apk upgrade --no-cache && \
     apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
