@@ -19,6 +19,7 @@ RUN go build -o /go-app .
 
 FROM alpine:3.23.6
 RUN apk upgrade --no-cache && \
+    apk add --no-cache --upgrade libssl3 libcrypto3 && \
     apk add --no-cache ca-certificates
 COPY --from=build-env /go-app /
 ENTRYPOINT ["/go-app", "--alsologtostderr", "--v=0"]
